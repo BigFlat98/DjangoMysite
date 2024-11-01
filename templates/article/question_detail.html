@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load article_tags %}
+{% block content %}
+    <div class="container my-3">
+        <!-- message 표시,question_modify view에서 message모듈을 사용했기 때문에 표현될 부분이 필요 -->
+        {% if messages %}
+        <div class="alert alert-danger my-3" role="alert">
+            {% for message in messages%}
+            <strong>{{message.tags}}</strong>
+            <ul>
+                <li>{{message.message}}</li>
+            </ul>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+
+        <!-- 질문 -->
+        <h2 class="border-bottom py-2">{{ question.subject }}</h2>
+        <div class="card my-3">
+            <div class="card-body">
+                <div class="card-text">{{ question.content|mark }}</div>
+                <div class="d-flex justify-content-end">
+                    
+                    <div class="badge bg-light text-dark p-2">
+                        <div class="mb-2 text-start">
+                            작성자:{{ question.author.username }}
+                        </div>
+                        {{ question.create_date }}
+                    </div>
+                    <div class='my-3'>
+                        <a href="javascript:void(0)" data-uri="{% url 'article:question_vote' question.id %}" class='recommend btn btn-success'>추천:<span class="badge rounded-pill bg-success">{{question.voter.count}}</span></a>
+                    </div>
+                </div>
+            </div>
+            {% if question.author == request.user %}
+            <a href="{% url 'article:question_modify' question.id %}" class="btn btn-light">수정하기</a>
+            {% endif %}
+        </div>
+        {% if question.author == request.user %}
+        <div>
+            <a href="javascript:void(0)" data-uri="{% url 'article:question_delete' question.id %}" class="btn btn-danger delete">삭제</a>
+            {% comment %} 
+            #url로 삭제를 진행할지 확인할 창을 실행하는 자바스크립트 호출 
+            #data-uri는 자바스크립트에서 확인 
+            javascript:void(0) -> 창의 전환 없이 바로 자바스크립트 실행
+            {% endcomment %}
+        </div>
+        {% endif %}
+
+        <!-- 답변 -->
+        <h5 class="border-bottom my-3 py-2">{{ question.answer_set.count }}개의 답변이 있습니다.</h5>
+        {% for answer in question.answer_set.all %}
+        <a id="answer_{{ answer.id }}"></a> <!--answer_create에서 리턴할 때 url뒤에 #naswer_(answer_id)가 넣어져서 들어오고 이 위치로 화면이 이동함-->
+            <div class="card my-3">
+                <div class="card-body">
+                    <div class="card-text" style="white-space: pre-line;">{{ answer.content }}</div>
+                    <div class="d-flex justify-content-end">
+                        <div class="badge text-bg-primary p-2">
+                            작성자:{{ answer.author.username }}
+                        </div>
+                        <div class="badge bg-light text-dark p-2">
+                            {{ answer.create_date|date:"Y년 m월 d일 H시 i분" }}
+                        </div>
+                        <div class='my-3'>
+                            <a href="javascript:void(0)" data-uri="{% url 'article:answer_vote' answer.id %}" class='recommend btn btn-success'>추천:<span class="badge rounded-pill bg-success">{{answer.voter.count}}</span></a>
+                        </div>
+                    </div>
+                    {% if answer.author == request.user %}
+                            <a href="{% url 'article:answer_modify' answer.id%}" class="btn btn-light">수정하기</a>
+                            <a href="javascript:void(0)" data-uri="{% url 'article:answer_delete' answer.id %}" class="btn btn-danger delete">삭제</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        <!-- 답변 등록 -->
+        <form action="{% url 'article:answer_create' question.id %}" method="post" class="my-3">
+            {% csrf_token %}
+            <!-- 오류표시 Start -->
+            {% if form.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for field in form %}
+                        {% if field.errors %}
+                            <div>
+                                <strong>{{ field.label }}</strong>
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <!-- 오류표시 End -->
+            <div class="mb-3">
+                <label for="content" class="form-label">답변내용</label>
+                <textarea {% if not user.is_authenticated %}disabled{% endif %} name="content" id="content" class="form-control" rows="10"></textarea>
+                <!--엘리멘트 속성으로 템플릿 태그 사용 가능 , user는 따로 전달받지 않아도 request에 포함돼있는 내용이기 때문에 사용 가능-->
+            </div>
+            <input type="submit" value="답변등록" class="btn btn-primary">
+        </form>
+    </div>
+{%endblock%} <!--이 블럭 안에 있는 부분이 base.html을 상속받아서 내용들을 똑같이 사용. 
+                대신 block 부분에 이 페이지에서 보여줘야 하는 내용을 적어서 적용해줌.
+                그래서 body 안에 들어가는 내용들만 적어주는 거임
+                -->
+
+{% comment %} {% block script %}
+    <script type='text/javascript'>
+        const delete_elements = document.getElementsByClassName("delete");
+        Array.from(delete_elements).forEach(function(element){
+            element.addEventListener('click' function(){
+                if(confirm("do you really want to delete this question?")){ //confirm함수는 alert함수랑 똑같은데 Y,N버튼 주고 Y누르면 True리턴
+                    location.href = this.dataset.uri; //만약 if true면(yes누르면) 호출된 위치 href를 dataset.uri로 
+                                                    //this.dataset은 예약어임.
+                };
+            });
+        });
+    </script>
+{% endblock %} {% endcomment %}
+
+{% block script %}
+    <script type='text/javascript'>
+        const delete_elements = document.getElementsByClassName("delete");
+        Array.from(delete_elements).forEach(function(element) {
+            element.addEventListener('click', function() {
+                if(confirm("정말로 삭제하시겠습니까?")) {
+                    location.href = this.dataset.uri;
+                };
+            });
+        });
+        const recommend_elements = document.getElementsByClassName("recommend");
+        Array.from(recommend_elements).forEach(function(element) {
+            element.addEventListener('click', function() {
+                if(confirm("정말로 추천 하시겠습니까?")) {
+                    location.href = this.dataset.uri;
+                };
+            });
+        });
+    </script>
+{% endblock %}

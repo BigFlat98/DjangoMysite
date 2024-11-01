@@ -1,0 +1,13 @@
+{% extends "base.html"%}
+{%block content%}
+    <div class="container">
+        <h5 class="my-3 border-bottom pb-2">질문등록</h5>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}<!--#views에 있는 함수에서 forms.py에서 객체(페이지에서 전송받은 데이터를 객체화)를 전달받은 객체. as_p는 모든 속성 다 가져옴
+                                이렇게 모델에서 가져온 객체의 속성을 적어주는 것 만으로도 화면에 textarea가 자동으로 생성됨. 이는 프레임워크 기본 기능.-->
+            <button type="submit" class="btn btn-primary">저장하기</button>
+        </form> <!--버튼을 눌렀을 때 다음 경로가 지정돼있지 않기 때문에 post방식으로 자신의 url에 재요청을 함. 
+                    그럼 detail에 있는 등록하기 버튼을 누른것과 동일한 작업.-->
+    </div>
+{%endblock%}
